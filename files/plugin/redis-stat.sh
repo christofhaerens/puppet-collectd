@@ -5,6 +5,17 @@ INTERVAL="${COLLECTD_INTERVAL:-10}"
 REDIS_CLI=`which redis-cli`
 PORT=6379
 
+PW=""
+if [ -f /var/lib/redis/.requirepass ] ; then
+  PW=$(head -1 /var/lib/redis/.requirepass)
+fi
+
+if [ "X$PW" == "X" ] ; then
+  CMD="$REDIS_CLI -p $PORT info"
+else
+  CMD="$REDIS_CLI -a $PW -p $PORT info"
+fi
+
 calc(){
   awk "BEGIN { print "$*" }"
 }
@@ -15,7 +26,7 @@ do
 
   # parsing stats
   #info=$(echo info|nc -w 1 127.0.0.1 $PORT)
-  info=`$REDIS_CLI -p $PORT info`
+  info=`$CMD`
   connected_clients=$(echo "$info"|awk -F : '$1 == "connected_clients" {print $2}')
   connected_slaves=$(echo "$info"|awk -F : '$1 == "connected_slaves" {print $2}')
   uptime=$(echo "$info"|awk -F : '$1 == "uptime_in_seconds" {print $2}')
